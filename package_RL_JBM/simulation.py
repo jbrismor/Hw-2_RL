@@ -1,112 +1,52 @@
-import gymnasium as gym
+import gym
 from gym import spaces
 import numpy as np
-import pandas as pd
 import pygame
 
-# Boat example (code from website)
 class BoatEnv(gym.Env):
-
-    metadata = {'render_mods': [None]}
+    metadata = {'render_modes': [None]}
 
     def __init__(self, east_wind=0.7, west_wind=0.3, seed=None):
-        """
-        Arguments:
-            east_wind (float) : Probability of easterly wind
-        """
-        
         assert east_wind + west_wind <= 1, 'Invalid wind probabilities'
-        
-        # Only 2 states "left state or right state"
         self.observation_space = spaces.Discrete(2)
-
-        # Two possible actions motor on or motor off
         self.action_space = spaces.Discrete(2)
-
-        # Define a random number generator
         self.rng = np.random.default_rng(seed)
-
-        # Probabilities of wind
-        self.prob_wind = [east_wind, west_wind, 1-east_wind-west_wind]
-
-        # Pygame setup
+        self.prob_wind = [east_wind, west_wind, 1 - east_wind - west_wind]
         pygame.init()
-        self.screen_width = 600
-        self.screen_height = 400
+        self.screen_width, self.screen_height = 600, 400
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
         pygame.display.set_caption("Boat Environment")
         self.clock = pygame.time.Clock()
-
-        # Load boat image or use a rectangle for the boat
-        self.boat_image = pygame.image.load('package_RL_JBM/boat.jpg')
+        self.boat_image = pygame.image.load('package_RL_JBM/boat.jpg')  # Adjust path as needed
         self.boat_image = pygame.transform.scale(self.boat_image, (200, 100))
+        self.bg_color = (173, 216, 230)
+        self.line_color = (0, 0, 0)
+        self.end_line_color = (255, 165, 0)
 
-        # Colors
-        self.bg_color = (173, 216, 230)  # Light blue background (water)
-        self.line_color = (0, 0, 0)  # Black lines
-        self.end_line_color = (255, 165, 0)  # Orange lines
-
-    def get_info(self, wind):
-        direction = {0: 'No Wind', 1: 'East Wind', -1: 'West Wind'}
-
-        if wind is not None:
-            info = {'Wind': direction[wind]}
+    def step(self, action):
+        wind = self.rng.choice([1, 0, -1], p=self.prob_wind)
+        reward = 2 * self.state + 1 + wind + action
+        if self.state == 0:
+            self.state = 0 if reward < 2 else 1
         else:
-            info = {'Other News': 'Nothing to report Huston'}
-
-        return info
+            self.state = 1 if reward > 2 else 0
+        self.render()  # Render the state change
+        return self.state, reward, False, {}
 
     def reset(self):
-        # Always start in the left state
         self.state = 0
-        observation = self.state
-        info = self.get_info(None)
-        return observation, info
-    
-    def step(self, action):
-        # East +1, No Wind 0, West -1
-        wind = self.rng.choice([1, 0, -1], p=self.prob_wind)
-
-        # Determine reward (0, 1, 2, 3, or 4)
-        reward = 2*self.state + 1 + wind + action
-
-        # Update the state (s')
-        if self.state == 0: 
-            if reward < 2:
-                self.state = 0
-            else:
-                self.state = 1
-        else:
-            if reward > 2:
-                self.state = 1
-            else:
-                self.state = 0
-
-        observation = self.state
-        terminated = False
-        truncated = False
-        info = self.get_info(wind)
-
-        return observation, reward, terminated, truncated, info
+        self.render()  # Render the initial state
+        return self.state
 
     def render(self, mode='human'):
-        # Clear the screen with background color
         self.screen.fill(self.bg_color)
-
-        # Draw vertical lines: orange for ends, black for middle
-        pygame.draw.line(self.screen, self.end_line_color, (0, 0), (0, self.screen_height), 10)  # Left orange line
-        pygame.draw.line(self.screen, self.end_line_color, (self.screen_width - 10, 0), (self.screen_width - 10, self.screen_height), 10)  # Right orange line
-        pygame.draw.line(self.screen, self.line_color, (self.screen_width // 2, 0), (self.screen_width // 2, self.screen_height), 10)  # Middle black line
-
-        # Draw the boat based on the state
+        pygame.draw.line(self.screen, self.end_line_color, (0, 0), (0, self.screen_height), 10)
+        pygame.draw.line(self.screen, self.end_line_color, (self.screen_width - 10, 0), (self.screen_width - 10, self.screen_height), 10)
+        pygame.draw.line(self.screen, self.line_color, (self.screen_width // 2, 0), (self.screen_width // 2, self.screen_height), 10)
         if self.state == 0:
-            # Boat on the left side
-            self.screen.blit(self.boat_image, (self.screen_width // 4 - 100, self.screen_height // 2 - 50))  # Adjust for larger boat
+            self.screen.blit(self.boat_image, (self.screen_width // 4 - 100, self.screen_height // 2 - 50))
         else:
-            # Boat on the right side
-            self.screen.blit(self.boat_image, (3 * self.screen_width // 4 - 100, self.screen_height // 2 - 50))  # Adjust for larger boat
-
-        # Update the display
+            self.screen.blit(self.boat_image, (3 * self.screen_width // 4 - 100, self.screen_height // 2 - 50))
         pygame.display.flip()
 
     def close(self):
@@ -211,3 +151,5 @@ class GridWorldEnv(gym.Env):
 
     def close(self):
         pygame.quit()
+
+# Geo Search
