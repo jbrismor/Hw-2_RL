@@ -3,220 +3,6 @@ from gym import spaces
 import numpy as np
 import pygame
 
-# class BoatEnvSimulator(gym.Env):
-#     metadata = {'render_modes': [None]}
-
-#     def __init__(self, east_wind_prob=0.7, west_wind_prob=0.3, episodes=100, steps=1000, seed=None):
-#         super().__init__()
-#         self.east_wind_prob = east_wind_prob
-#         self.west_wind_prob = west_wind_prob
-#         self.observation_space = spaces.Discrete(2)
-#         self.action_space = spaces.Discrete(2)
-#         self.episodes = episodes
-#         self.steps = steps
-#         self.rng = np.random.default_rng(seed)
-#         self.prob_wind = [east_wind_prob, west_wind_prob, 1 - east_wind_prob - west_wind_prob]
-#         pygame.init()
-#         self.screen_width, self.screen_height = 600, 400
-#         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
-#         pygame.display.set_caption("Boat Environment")
-#         self.bg_color = (173, 216, 230)
-#         self.line_color = (0, 0, 0)
-#         self.end_line_color = (255, 165, 0)
-#         self.boat_image = pygame.image.load('package_RL_JBM/boat.jpg')
-#         self.boat_image = pygame.transform.scale(self.boat_image, (200, 100))
-
-#     def get_info(self, wind):
-#         direction = {1: 'East Wind', -1: 'West Wind', 0: 'No Wind'}
-#         return {'Wind': direction[wind]}
-
-#     def reset(self):
-#         self.state = 0
-#         self.render()
-#         return self.state, self.get_info(0)
-
-#     def step(self, action):
-#         wind = self.rng.choice([1, -1, 0], p=self.prob_wind)  # Randomly choose wind direction or no wind
-#         move_direction = 1 if action == 1 else -1  # 1 for right, -1 for left
-#         reward = 0
-
-#         # Determine next state and calculate reward based on the current state, action, and wind
-#         if (wind == move_direction or wind == 0):  # Move if wind and motor direction align or no wind
-#             if self.state == 0 and action == 1:
-#                 self.state = 1  # Move right from left
-#                 reward = 2
-#             elif self.state == 1 and action == 0:
-#                 self.state = 0  # Move left from right
-#                 reward = 2
-#         else:
-#             # Handling no movement due to opposing wind and motor direction
-#             if self.state == 0:
-#                 reward = 1 if action == 0 else 0  # Hitting left wall or staying due to wind
-#             elif self.state == 1:
-#                 reward = 4 if action == 1 else 3  # Hitting right wall or staying due to wind
-
-#         terminated = False
-#         truncated = False
-#         self.render()
-#         return self.state, reward, terminated, truncated, self.get_info(wind)
-    
-#     def get_transitions(self, state, action):
-#         transitions = []
-#         action_direction = 1 if action == 1 else -1  # 1 for right, -1 for left
-
-#         # Iterate over possible wind effects
-#         for wind, prob in zip([1, -1, 0], self.prob_wind):
-#             move_direction = action_direction
-#             if wind == move_direction or wind == 0:  # Movement happens
-#                 new_state = 1 if state == 0 and action == 1 else 0 if state == 1 and action == 0 else state
-#             else:
-#                 new_state = state  # No movement due to opposing wind
-
-#             # Determine reward based on new state, current state, action, and wind
-#             if new_state != state:  # Successfully moved to the other state
-#                 reward = 2
-#             else:
-#                 if state == 0:
-#                     reward = 1 if action == 0 else 0  # No move or hit the wall
-#                 elif state == 1:
-#                     reward = 4 if action == 1 else 3  # Hit the wall or no move
-
-#             transitions.append((prob, new_state, reward))
-        
-#         return transitions
-
-#     def render(self, mode='human'):
-#         # Clear the screen with background color
-#         self.screen.fill(self.bg_color)
-
-#         # Draw vertical lines: orange for ends, black for middle
-#         pygame.draw.line(self.screen, self.end_line_color, (0, 0), (0, self.screen_height), 10)  # Left orange line
-#         pygame.draw.line(self.screen, self.end_line_color, (self.screen_width - 10, 0), (self.screen_width - 10, self.screen_height), 10)  # Right orange line
-#         pygame.draw.line(self.screen, self.line_color, (self.screen_width // 2, 0), (self.screen_width // 2, self.screen_height), 10)  # Middle black line
-
-#         # Draw the boat based on the state
-#         if self.state == 0:
-#             # Boat on the left side
-#             self.screen.blit(self.boat_image, (self.screen_width // 4 - 100, self.screen_height // 2 - 50))  # Adjust for larger boat
-#         else:
-#             # Boat on the right side
-#             self.screen.blit(self.boat_image, (3 * self.screen_width // 4 - 100, self.screen_height // 2 - 50))  # Adjust for larger boat
-
-#         # Update the display
-#         pygame.display.flip()
-
-#     def run_simulation(self):
-#         for _ in range(self.episodes):
-#             state, _ = self.reset()
-#             for _ in range(self.steps):
-#                 action = np.random.choice([0, 1], p=[0.5, 0.5])
-#                 next_state, reward, terminated, truncated, _ = self.step(action)
-#                 transition_key = (state, action, next_state)
-#                 reward_key = (state, action, next_state, reward)
-#                 if transition_key not in self.transition_counts:
-#                     self.transition_counts[transition_key] = 0
-#                 self.transition_counts[transition_key] += 1
-#                 if reward_key not in self.state_rewards:
-#                     self.state_rewards[reward_key] = 0
-#                 self.state_rewards[reward_key] += 1
-#                 state = next_state
-#                 if terminated or truncated:
-#                     break
-
-#     def close(self):
-#         pygame.quit()
-
-# class GridWorldEnv(gym.Env):
-#     metadata = {'render_modes': [None]}
-
-#     def __init__(self, gamma=0.25, episodes=10000, steps=1000, seed=None):
-#         super().__init__()
-#         self.grid_size = (6, 6)
-#         self.action_space = spaces.Discrete(4)
-#         self.observation_space = spaces.Discrete(self.grid_size[0] * self.grid_size[1])
-#         self.gamma = gamma
-#         self.episodes = episodes
-#         self.steps = steps
-#         self.rng = np.random.default_rng(seed)
-#         self.state = (0, 0)
-
-#         # Wall positions based on the initial setup
-#         self.walls = [(i, 2) for i in [0, 1]] + [(i, 2) for i in [3, 4, 5]] + [(3, j) for j in [2, 3, 4]]
-#         self.terminal_states = {
-#             (5, 0): -50,  # Negative terminal state
-#             (1, 4): -50,  # Another negative terminal state
-#             (5, 5): 100   # Positive terminal state
-#         }
-#         self.default_reward = -1
-
-#         # Pygame setup for rendering
-#         pygame.init()
-#         self.window_size = 600  # 600x600 window size
-#         self.grid_pixel_size = self.window_size // self.grid_size[0]
-#         self.screen = pygame.display.set_mode((self.window_size, self.window_size))
-#         pygame.display.set_caption("GridWorld")
-#         self.robot_image = pygame.image.load('package_RL_JBM/robot.png.jpg')
-#         self.robot_image = pygame.transform.scale(self.robot_image, (self.grid_pixel_size, self.grid_pixel_size))
-
-#         # Colors for walls and terminal states
-#         self.wall_color = (0, 45, 98)  # Dark blue: #002D62
-#         self.bad_state_color = (136, 8, 8)  # Red: #880808
-#         self.good_state_color = (0, 106, 78)  # Green: #006A4E
-
-#     def state_to_index(self, state):
-#         i, j = state
-#         return i * self.grid_size[1] + j
-
-#     def index_to_state(self, index):
-#         return (index // self.grid_size[1], index % self.grid_size[1])
-
-#     def reset(self):
-#         self.state = (0, 0)
-#         return self.state_to_index(self.state)
-
-#     def step(self, action):
-#         i, j = self.state
-#         directions = [(i - 1, j), (i, j + 1), (i + 1, j), (i, j - 1)]
-#         next_state = directions[action]
-#         if next_state in self.walls or not (0 <= next_state[0] < self.grid_size[0] and 0 <= next_state[1] < self.grid_size[1]):
-#             next_state = self.state
-#         reward = self.terminal_states.get(next_state, self.default_reward)
-#         done = next_state in self.terminal_states
-#         self.state = next_state
-#         return self.state_to_index(self.state), reward, done, {}
-
-#     def get_transitions(self, state, action):
-#         transitions = []
-#         i, j = self.index_to_state(state)
-#         directions = [(i - 1, j), (i, j + 1), (i + 1, j), (i, j - 1)]
-#         for dir_index, (next_i, next_j) in enumerate(directions):
-#             if (next_i, next_j) in self.walls or not (0 <= next_i < self.grid_size[0] and 0 <= next_j < self.grid_size[1]):
-#                 next_state = state
-#             else:
-#                 next_state = self.state_to_index((next_i, next_j))
-#             reward = self.terminal_states.get(self.index_to_state(next_state), self.default_reward)
-#             prob = 1.0 if dir_index == action else 0.0
-#             transitions.append((prob, next_state, reward))
-#         return transitions
-
-#     def render(self, mode='human'):
-#         self.screen.fill((255, 255, 255))
-#         for i in range(self.grid_size[0]):
-#             for j in range(self.grid_size[1]):
-#                 rect = pygame.Rect(j * self.grid_pixel_size, i * self.grid_pixel_size, self.grid_pixel_size, self.grid_pixel_size)
-#                 if (i, j) in self.walls:
-#                     pygame.draw.rect(self.screen, self.wall_color, rect)
-#                 elif (i, j) in self.terminal_states:
-#                     color = self.good_state_color if self.terminal_states[(i, j)] > 0 else self.bad_state_color
-#                     pygame.draw.rect(self.screen, color, rect)
-#                 elif (i, j) == self.state:
-#                     self.screen.blit(self.robot_image, rect)
-#                 pygame.draw.rect(self.screen, (0, 0, 0), rect, 1)
-#         pygame.display.flip()
-
-#     def close(self):
-#         pygame.quit()
-
 class BoatEnvSimulator(gym.Env):
     metadata = {'render_modes': [None]}
 
@@ -249,7 +35,7 @@ class BoatEnvSimulator(gym.Env):
     def reset(self):
         self.state = 0
         self.render()
-        return self.state, self.get_info(0)
+        return self.state  # Return only the state, without the additional info
 
     def step(self, action):
         wind = self.rng.choice([1, -1, 0], p=self.prob_wind)
@@ -270,7 +56,7 @@ class BoatEnvSimulator(gym.Env):
         terminated = False
         truncated = False
         self.render()
-        return self.state, reward, terminated, truncated, self.get_info(wind)
+        return self.state, reward, terminated, truncated  # No info returned here
 
     def get_transitions(self, state, action):
         transitions = []
@@ -306,10 +92,10 @@ class BoatEnvSimulator(gym.Env):
 
     def run_simulation(self):
         for _ in range(self.episodes):
-            state, _ = self.reset()
+            state = self.reset()
             for _ in range(self.steps):
                 action = np.random.choice([0, 1], p=[0.5, 0.5])
-                next_state, reward, terminated, truncated, _ = self.step(action)
+                next_state, reward, terminated, truncated = self.step(action)
                 state = next_state
                 if terminated or truncated:
                     break
@@ -317,6 +103,212 @@ class BoatEnvSimulator(gym.Env):
     def close(self):
         pygame.quit()
 
+# class BoatEnvSimulator(gym.Env):
+#     metadata = {'render_modes': [None]}
+
+#     def __init__(self, east_wind_prob=0.7, west_wind_prob=0.3, episodes=100, steps=1000, seed=None):
+#         super().__init__()
+#         self.east_wind_prob = east_wind_prob
+#         self.west_wind_prob = west_wind_prob
+#         self.observation_space = spaces.Discrete(2)
+#         self.action_space = spaces.Discrete(2)
+#         self.episodes = episodes
+#         self.steps = steps
+#         self.rng = np.random.default_rng(seed)
+#         self.prob_wind = [east_wind_prob, west_wind_prob, 1 - east_wind_prob - west_wind_prob]
+        
+#         # Pygame setup
+#         pygame.init()
+#         self.screen_width, self.screen_height = 600, 400
+#         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+#         pygame.display.set_caption("Boat Environment")
+#         self.bg_color = (173, 216, 230)
+#         self.line_color = (0, 0, 0)
+#         self.end_line_color = (255, 165, 0)
+#         self.boat_image = pygame.image.load('package_RL_JBM/boat.jpg')
+#         self.boat_image = pygame.transform.scale(self.boat_image, (200, 100))
+
+#     def get_info(self, wind):
+#         direction = {1: 'East Wind', -1: 'West Wind', 0: 'No Wind'}
+#         return {'Wind': direction[wind]}
+
+#     def reset(self):
+#         self.state = 0
+#         self.render()
+#         return self.state, self.get_info(0)
+
+#     def step(self, action):
+#         wind = self.rng.choice([1, -1, 0], p=self.prob_wind)
+#         move_direction = 1 if action == 1 else -1
+#         reward = 0
+
+#         # Calculate next state and reward based on action and wind
+#         if wind == move_direction or wind == 0:
+#             if self.state == 0 and action == 1:
+#                 self.state = 1
+#                 reward = 2
+#             elif self.state == 1 and action == 0:
+#                 self.state = 0
+#                 reward = 2
+#         else:
+#             reward = 1 if (self.state == 0 and action == 0) else (4 if (self.state == 1 and action == 1) else 0)
+
+#         terminated = False
+#         truncated = False
+#         self.render()
+#         return self.state, reward, terminated, truncated, self.get_info(wind)
+
+#     def get_transitions(self, state, action):
+#         transitions = []
+#         action_direction = 1 if action == 1 else -1
+
+#         # Define transitions based on wind probabilities
+#         for wind, prob in zip([1, -1, 0], self.prob_wind):
+#             if wind == action_direction or wind == 0:
+#                 new_state = 1 if state == 0 and action == 1 else 0 if state == 1 and action == 0 else state
+#             else:
+#                 new_state = state  # No movement due to opposing wind
+
+#             reward = 2 if new_state != state else (1 if state == 0 and action == 0 else (4 if state == 1 and action == 1 else 3))
+#             transitions.append((prob, new_state, reward))
+        
+#         return transitions
+
+#     def render(self, mode='human'):
+#         self.screen.fill(self.bg_color)
+        
+#         # Draw boundary lines
+#         pygame.draw.line(self.screen, self.end_line_color, (0, 0), (0, self.screen_height), 10)
+#         pygame.draw.line(self.screen, self.end_line_color, (self.screen_width - 10, 0), (self.screen_width - 10, self.screen_height), 10)
+#         pygame.draw.line(self.screen, self.line_color, (self.screen_width // 2, 0), (self.screen_width // 2, self.screen_height), 10)
+
+#         # Position the boat based on its current state
+#         if self.state == 0:
+#             self.screen.blit(self.boat_image, (self.screen_width // 4 - 100, self.screen_height // 2 - 50))
+#         else:
+#             self.screen.blit(self.boat_image, (3 * self.screen_width // 4 - 100, self.screen_height // 2 - 50))
+        
+#         pygame.display.flip()
+
+#     def run_simulation(self):
+#         for _ in range(self.episodes):
+#             state, _ = self.reset()
+#             for _ in range(self.steps):
+#                 action = np.random.choice([0, 1], p=[0.5, 0.5])
+#                 next_state, reward, terminated, truncated, _ = self.step(action)
+#                 state = next_state
+#                 if terminated or truncated:
+#                     break
+
+#     def close(self):
+#         pygame.quit()
+
+
+# class GridWorldEnv(gym.Env):
+    # metadata = {'render_modes': [None]}
+
+    # def __init__(self, gamma=0.25, episodes=10000, steps=1000, seed=None):
+    #     super().__init__()
+    #     self.grid_size = (6, 6)
+    #     self.action_space = spaces.Discrete(4)  # Up, Right, Down, Left
+    #     self.observation_space = spaces.Discrete(self.grid_size[0] * self.grid_size[1])
+    #     self.gamma = gamma
+    #     self.episodes = episodes
+    #     self.steps = steps
+    #     self.rng = np.random.default_rng(seed)
+    #     self.state = (0, 0)
+
+    #     # Define walls and terminal states
+    #     self.walls = [(i, 2) for i in [0, 1]] + [(i, 2) for i in [3, 4, 5]] + [(3, j) for j in [2, 3, 4]]
+    #     self.terminal_states = {
+    #         (5, 0): -50,  # Negative terminal state
+    #         (1, 4): -50,  # Another negative terminal state
+    #         (5, 5): 100   # Positive terminal state
+    #     }
+    #     self.default_reward = -1
+
+    #     # Pygame setup for rendering
+    #     pygame.init()
+    #     self.window_size = 600  # 600x600 window size
+    #     self.grid_pixel_size = self.window_size // self.grid_size[0]
+    #     self.screen = pygame.display.set_mode((self.window_size, self.window_size))
+    #     pygame.display.set_caption("GridWorld")
+    #     self.robot_image = pygame.image.load('package_RL_JBM/robot.png.jpg')
+    #     self.robot_image = pygame.transform.scale(self.robot_image, (self.grid_pixel_size, self.grid_pixel_size))
+
+    #     # Define colors
+    #     self.wall_color = (0, 45, 98)       # Dark blue for walls
+    #     self.bad_state_color = (136, 8, 8)  # Red for negative terminal states
+    #     self.good_state_color = (0, 106, 78)  # Green for positive terminal states
+
+    # def state_to_index(self, state):
+    #     i, j = state
+    #     return i * self.grid_size[1] + j
+
+    # def index_to_state(self, index):
+    #     return (index // self.grid_size[1], index % self.grid_size[1])
+
+    # def reset(self):
+    #     self.state = (0, 0)
+    #     return self.state_to_index(self.state)
+
+    # def step(self, action):
+    #     i, j = self.state
+    #     # Map actions to directions
+    #     directions = [(i - 1, j), (i, j + 1), (i + 1, j), (i, j - 1)]
+    #     next_state = directions[action]
+        
+    #     # Check for walls and boundaries
+    #     if next_state in self.walls or not (0 <= next_state[0] < self.grid_size[0] and 0 <= next_state[1] < self.grid_size[1]):
+    #         next_state = self.state  # Stay in the current state
+
+    #     # Get reward and check if the state is terminal
+    #     reward = self.terminal_states.get(next_state, self.default_reward)
+    #     done = next_state in self.terminal_states
+    #     self.state = next_state
+    #     return self.state_to_index(self.state), reward, done, {}
+
+    # def get_transitions(self, state, action):
+    #     transitions = []
+    #     i, j = self.index_to_state(state)
+    #     directions = [(i - 1, j), (i, j + 1), (i + 1, j), (i, j - 1)]
+        
+    #     for dir_index, (next_i, next_j) in enumerate(directions):
+    #         # Verify if the next state is a wall or out of bounds
+    #         if (next_i, next_j) in self.walls or not (0 <= next_i < self.grid_size[0] and 0 <= next_j < self.grid_size[1]):
+    #             next_state = state
+    #         else:
+    #             next_state = self.state_to_index((next_i, next_j))
+            
+    #         # Determine reward and probability
+    #         reward = self.terminal_states.get(self.index_to_state(next_state), self.default_reward)
+    #         prob = 1.0 if dir_index == action else 0.0
+    #         transitions.append((prob, next_state, reward))
+        
+    #     return transitions
+
+    # def render(self, mode='human'):
+    #     self.screen.fill((255, 255, 255))  # White background
+        
+    #     for i in range(self.grid_size[0]):
+    #         for j in range(self.grid_size[1]):
+    #             rect = pygame.Rect(j * self.grid_pixel_size, i * self.grid_pixel_size, self.grid_pixel_size, self.grid_pixel_size)
+                
+    #             # Draw walls and terminal states
+    #             if (i, j) in self.walls:
+    #                 pygame.draw.rect(self.screen, self.wall_color, rect)
+    #             elif (i, j) in self.terminal_states:
+    #                 color = self.good_state_color if self.terminal_states[(i, j)] > 0 else self.bad_state_color
+    #                 pygame.draw.rect(self.screen, color, rect)
+    #             elif (i, j) == self.state:
+    #                 self.screen.blit(self.robot_image, rect)
+
+    #             pygame.draw.rect(self.screen, (0, 0, 0), rect, 1)  # Grid lines
+        
+    #     pygame.display.flip()
+
+    # def close(self):
+    #     pygame.quit()
 
 class GridWorldEnv(gym.Env):
     metadata = {'render_modes': [None]}
@@ -330,7 +322,7 @@ class GridWorldEnv(gym.Env):
         self.episodes = episodes
         self.steps = steps
         self.rng = np.random.default_rng(seed)
-        self.state = (0, 0)
+        self.state = (0, 0)  # Initialize state as (i, j) tuple
 
         # Define walls and terminal states
         self.walls = [(i, 2) for i in [0, 1]] + [(i, 2) for i in [3, 4, 5]] + [(3, j) for j in [2, 3, 4]]
@@ -343,17 +335,16 @@ class GridWorldEnv(gym.Env):
 
         # Pygame setup for rendering
         pygame.init()
-        self.window_size = 600  # 600x600 window size
+        self.window_size = 600
         self.grid_pixel_size = self.window_size // self.grid_size[0]
         self.screen = pygame.display.set_mode((self.window_size, self.window_size))
         pygame.display.set_caption("GridWorld")
         self.robot_image = pygame.image.load('package_RL_JBM/robot.png.jpg')
         self.robot_image = pygame.transform.scale(self.robot_image, (self.grid_pixel_size, self.grid_pixel_size))
 
-        # Define colors
-        self.wall_color = (0, 45, 98)       # Dark blue for walls
-        self.bad_state_color = (136, 8, 8)  # Red for negative terminal states
-        self.good_state_color = (0, 106, 78)  # Green for positive terminal states
+        self.wall_color = (0, 45, 98)
+        self.bad_state_color = (136, 8, 8)
+        self.good_state_color = (0, 106, 78)
 
     def state_to_index(self, state):
         i, j = state
@@ -363,52 +354,46 @@ class GridWorldEnv(gym.Env):
         return (index // self.grid_size[1], index % self.grid_size[1])
 
     def reset(self):
-        self.state = (0, 0)
-        return self.state_to_index(self.state)
+        self.state = (0, 0)  # Reset to (i, j) tuple format
+        return self.state_to_index(self.state)  # Return integer index
 
     def step(self, action):
         i, j = self.state
-        # Map actions to directions
         directions = [(i - 1, j), (i, j + 1), (i + 1, j), (i, j - 1)]
         next_state = directions[action]
-        
-        # Check for walls and boundaries
-        if next_state in self.walls or not (0 <= next_state[0] < self.grid_size[0] and 0 <= next_state[1] < self.grid_size[1]):
-            next_state = self.state  # Stay in the current state
 
-        # Get reward and check if the state is terminal
+        if next_state in self.walls or not (0 <= next_state[0] < self.grid_size[0] and 0 <= next_state[1] < self.grid_size[1]):
+            next_state = self.state
+
         reward = self.terminal_states.get(next_state, self.default_reward)
         done = next_state in self.terminal_states
-        self.state = next_state
+        self.state = next_state  # Update state as (i, j) tuple
         return self.state_to_index(self.state), reward, done, {}
 
     def get_transitions(self, state, action):
         transitions = []
         i, j = self.index_to_state(state)
         directions = [(i - 1, j), (i, j + 1), (i + 1, j), (i, j - 1)]
-        
+
         for dir_index, (next_i, next_j) in enumerate(directions):
-            # Verify if the next state is a wall or out of bounds
             if (next_i, next_j) in self.walls or not (0 <= next_i < self.grid_size[0] and 0 <= next_j < self.grid_size[1]):
                 next_state = state
             else:
                 next_state = self.state_to_index((next_i, next_j))
-            
-            # Determine reward and probability
-            reward = self.terminal_states.get(self.index_to_state(next_state), self.default_reward)
+
+            reward = self.terminal_states.get((next_i, next_j), self.default_reward)
             prob = 1.0 if dir_index == action else 0.0
             transitions.append((prob, next_state, reward))
         
         return transitions
 
     def render(self, mode='human'):
-        self.screen.fill((255, 255, 255))  # White background
+        self.screen.fill((255, 255, 255))
         
         for i in range(self.grid_size[0]):
             for j in range(self.grid_size[1]):
                 rect = pygame.Rect(j * self.grid_pixel_size, i * self.grid_pixel_size, self.grid_pixel_size, self.grid_pixel_size)
                 
-                # Draw walls and terminal states
                 if (i, j) in self.walls:
                     pygame.draw.rect(self.screen, self.wall_color, rect)
                 elif (i, j) in self.terminal_states:
@@ -417,8 +402,8 @@ class GridWorldEnv(gym.Env):
                 elif (i, j) == self.state:
                     self.screen.blit(self.robot_image, rect)
 
-                pygame.draw.rect(self.screen, (0, 0, 0), rect, 1)  # Grid lines
-        
+                pygame.draw.rect(self.screen, (0, 0, 0), rect, 1)
+
         pygame.display.flip()
 
     def close(self):

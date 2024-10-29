@@ -1,10 +1,8 @@
 import numpy as np
-import gymnasium as gym
-
-import numpy as np
 import gym
+from collections import defaultdict
 
-class RLSolver:
+class DynamicProgrammingSolver:
     def __init__(self, env, gamma=0.99, theta=0.01, use_value_iteration=False):
         self.env = env
         self.gamma = gamma
@@ -100,3 +98,80 @@ class RLSolver:
             if old_action != best_action:
                 policy_stable = False
         return policy_stable
+
+class MonteCarloSolver:
+    def __init__(self, env, gamma=0.99, epsilon=0.1, exploring_starts=True, episodes=1000, max_steps_per_episode=100):
+        self.env = env
+        self.gamma = gamma
+        self.epsilon = epsilon
+        self.exploring_starts = exploring_starts
+        self.episodes = episodes
+        self.max_steps_per_episode = max_steps_per_episode
+        self.Q = defaultdict(lambda: np.zeros(self.env.action_space.n))
+        self.Returns = defaultdict(list)
+        self.policy = {s: np.random.choice(self.env.action_space.n) for s in range(self.env.observation_space.n)}
+
+    def generate_episode(self):
+        episode = []
+        state = self.env.reset()
+        done = False
+        steps = 0
+        
+        while not done and steps < self.max_steps_per_episode:
+            action = self.select_action(state)
+            next_state, reward, done, _ = self.env.step(action)
+            episode.append((state, action, reward))
+            state = next_state
+            steps += 1
+
+        return episode
+
+    def select_action(self, state):
+        if np.random.rand() < self.epsilon:
+            return np.random.choice(self.env.action_space.n)
+        else:
+            return np.argmax(self.Q[state])
+
+    def run(self):
+        for episode_num in range(self.episodes):
+            if self.exploring_starts:
+                state = self.env.observation_space.sample()
+                action = self.env.action_space.sample()
+                self.env.state = self.env.index_to_state(state)
+                episode = self.generate_episode_with_start(state, action)
+            else:
+                episode = self.generate_episode()
+
+            G = 0
+            visited_state_action_pairs = set()
+
+            for t in reversed(range(len(episode))):
+                state, action, reward = episode[t]
+                G = self.gamma * G + reward
+
+                if (state, action) not in visited_state_action_pairs:
+                    self.Returns[(state, action)].append(G)
+                    self.Q[state][action] = np.mean(self.Returns[(state, action)])
+                    self.policy[state] = np.argmax(self.Q[state])
+                    visited_state_action_pairs.add((state, action))
+
+            if episode_num % 100 == 0:
+                print(f"Policy after {episode_num} episodes: {self.policy}")
+
+        return self.policy
+
+    def generate_episode_with_start(self, start_state, start_action):
+        episode = []
+        state = start_state
+        action = start_action
+        done = False
+        steps = 0
+
+        while not done and steps < self.max_steps_per_episode:
+            next_state, reward, done, _ = self.env.step(action)
+            episode.append((state, action, reward))
+            state = next_state
+            action = self.select_action(state)
+            steps += 1
+
+        return episode
