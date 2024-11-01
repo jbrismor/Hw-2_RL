@@ -1,11 +1,5 @@
----
-format:
-  html:
-    embed-resources: true
-    toc: true
----
-
 # Homework-2: Tabular RL
+
 
 ## Submission
 
